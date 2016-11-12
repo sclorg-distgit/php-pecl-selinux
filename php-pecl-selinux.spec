@@ -1,3 +1,5 @@
+# centos/sclo spec file for php-pecl-selinux, from:
+#
 # remirepo spec file for php-pecl-selinux
 # adapted for SCL
 #
@@ -13,34 +15,29 @@
 # Please, preserve the changelog entries
 #
 %if 0%{?scl:1}
+%global sub_prefix sclo-%{scl_prefix}
 %if "%{scl}" == "rh-php56"
-%global sub_prefix more-php56-
-%else
-%global sub_prefix %{scl_prefix}
+%global sub_prefix  sclo-php56-
 %endif
+%if "%{scl}" == "rh-php70"
+%global sub_prefix  sclo-php70-
 %endif
-
-%{?scl:          %scl_package         php-pecl-selinux}
+%scl_package        php-pecl-selinux
+%endif
 
 %define pecl_name   selinux
-%global with_zts    0%{?__ztsphp:1}
-%global with_tests  %{?_without_tests:0}%{!?_without_tests:1}
-%if "%{php_version}" < "5.6"
-%global ini_name    %{pecl_name}.ini
-%else
+%global with_tests  0%{!?_without_tests:1}
 %global ini_name    40-%{pecl_name}.ini
-%endif
 
 Summary:        SELinux binding for PHP scripting language
 Name:           %{?sub_prefix}php-pecl-selinux
 Version:        0.4.1
-Release:        8%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Release:        1%{?dist}
 License:        PHP
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/%{pecl_name}
 Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 
-BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:  %{?scl_prefix}php-devel >= 5.2.0
 BuildRequires:  %{?scl_prefix}php-pear
 BuildRequires:  libselinux-devel >= 2.0.80
@@ -48,37 +45,14 @@ BuildRequires:  libselinux-devel >= 2.0.80
 Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:       %{?scl_prefix}php(api) = %{php_core_api}
 Requires:       libselinux >= 2.0.80
-%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
 Provides:       %{?scl_prefix}php-%{pecl_name}               = %{version}
 Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa}       = %{version}
 Provides:       %{?scl_prefix}php-pecl(%{pecl_name})         = %{version}
 Provides:       %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
+%if "%{?scl_prefix}" != "%{?sub_prefix}"
 Provides:       %{?scl_prefix}php-pecl-%{pecl_name}          = %{version}-%{release}
 Provides:       %{?scl_prefix}php-pecl-%{pecl_name}%{?_isa}  = %{version}-%{release}
-
-%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
-# Other third party repo stuff
-Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
-Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php54-pecl-%{pecl_name}  <= %{version}
-Obsoletes:     php54w-pecl-%{pecl_name} <= %{version}
-%if "%{php_version}" > "5.5"
-Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "5.6"
-Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "7.0"
-Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "7.1"
-Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
-%endif
 %endif
 
 %if 0%{?fedora} < 20 && 0%{?rhel} < 7
@@ -122,11 +96,6 @@ cat > %{ini_name} << 'EOF'
 extension=%{pecl_name}.so
 EOF
 
-%if %{with_zts}
-# duplicate for ZTS build
-cp -pr NTS ZTS
-%endif
-
 
 %build
 cd NTS
@@ -135,18 +104,8 @@ cd NTS
     --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
 
-%if %{with_zts}
-cd ../ZTS
-%{_bindir}/zts-phpize
-%configure \
-    --with-php-config=%{_bindir}/zts-php-config
-make %{?_smp_mflags}
-%endif
-
 
 %install
-rm -rf %{buildroot}
-
 # Install the NTS stuff
 make -C NTS install INSTALL_ROOT=%{buildroot}
 
@@ -155,12 +114,6 @@ install -D -m 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
 
 # Install XML package description
 install -D -m 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
-
-%if %{with_zts}
-# Install the ZTS stuff
-make -C ZTS install INSTALL_ROOT=%{buildroot}
-install -D -m 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
-%endif
 
 # Documentation
 cd NTS
@@ -186,19 +139,6 @@ REPORT_EXIT_STATUS=0 \
 : Ignore result as unreliable in mock
 %endif
 
-%if %{with_zts}
-cd ../ZTS
-: Minimal load test for ZTS extension
-%{__ztsphp} --no-php-ini \
-    --define extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
-    --modules | grep %{pecl_name}
-%endif
-
-
-
-%clean
-rm -rf %{buildroot}
-
 
 %if 0%{?fedora} < 24
 # when pear installed alone, after us
@@ -221,7 +161,6 @@ fi
 
 
 %files
-%defattr(-,root,root,-)
 %{?_licensedir:%license NTS/LICENSE}
 %doc %{pecl_docdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
@@ -229,13 +168,11 @@ fi
 %config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{pecl_name}.so
 
-%if %{with_zts}
-%config(noreplace) %{php_ztsinidir}/%{ini_name}
-%{php_ztsextdir}/%{pecl_name}.so
-%endif
-
 
 %changelog
+* Sat Nov 12 2016 Remi Collet <remi@fedoraproject.org> - 0.4.1-1
+- cleanup for SCLo build
+
 * Wed Sep 14 2016 Remi Collet <remi@fedoraproject.org> - 0.4.1-8
 - rebuild for PHP 7.1 new API version
 
