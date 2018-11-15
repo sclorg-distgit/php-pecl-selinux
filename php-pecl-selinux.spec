@@ -3,7 +3,7 @@
 # remirepo spec file for php-pecl-selinux
 # adapted for SCL
 #
-# Copyright (c) 2011-2016 Remi Collet
+# Copyright (c) 2011-2018 Remi Collet
 #
 # Fedora spec file for php-pecl-selinux
 #
@@ -16,11 +16,14 @@
 #
 %if 0%{?scl:1}
 %global sub_prefix sclo-%{scl_prefix}
-%if "%{scl}" == "rh-php56"
-%global sub_prefix  sclo-php56-
-%endif
 %if "%{scl}" == "rh-php70"
 %global sub_prefix  sclo-php70-
+%endif
+%if "%{scl}" == "rh-php71"
+%global sub_prefix  sclo-php71-
+%endif
+%if "%{scl}" == "rh-php72"
+%global sub_prefix  sclo-php72-
 %endif
 %scl_package        php-pecl-selinux
 %endif
@@ -32,7 +35,7 @@
 Summary:        SELinux binding for PHP scripting language
 Name:           %{?sub_prefix}php-pecl-selinux
 Version:        0.4.1
-Release:        1%{?dist}
+Release:        3%{?dist}
 License:        PHP
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/%{pecl_name}
@@ -170,6 +173,12 @@ fi
 
 
 %changelog
+* Thu Nov 15 2018 Remi Collet <remi@remirepo.net> - 0.4.1-3
+- build for sclo-php72
+
+* Thu Aug 10 2017 Remi Collet <remi@remirepo.net> - 0.4.1-2
+- change for sclo-php71
+
 * Sat Nov 12 2016 Remi Collet <remi@fedoraproject.org> - 0.4.1-1
 - cleanup for SCLo build
 
